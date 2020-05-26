@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import Video from './Video'
+import Video from './video'
 
 class Videos extends Component {
   constructor(props) {
@@ -13,18 +13,27 @@ class Videos extends Component {
 
   componentWillReceiveProps(nextProps) {
     if (this.props.remoteStreams !== nextProps.remoteStreams) {
-      
+
       let _rVideos = nextProps.remoteStreams.map((rVideo, index) => {
-        let video = <Video
-          videoStream={rVideo.stream}
-          frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
-          videoStyles={{
-            cursor: 'pointer',
-            objectFit: 'cover',
-            borderRadius: 3,
-            width: '100%',
-          }}
-        />
+
+        const _videoTrack = rVideo.stream.getTracks().filter(track => track.kind === 'video')
+        console.log('tracks...', index, _videoTrack, rVideo.stream.getTracks())
+
+        // let video = rVideo.stream.getTracks()[0].kind === 'video' && (
+        let video = _videoTrack && (
+          <Video
+            videoStream={rVideo.stream}
+            frameStyle={{ width: 120, float: 'left', padding: '0 3px' }}
+            videoStyles={{
+              cursor: 'pointer',
+              objectFit: 'cover',
+              borderRadius: 3,
+              width: '100%',
+            }}
+            // muted // <--- remove
+            autoplay
+          />
+        ) || <div></div>
 
         return (
           <div

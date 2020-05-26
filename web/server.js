@@ -10,6 +10,7 @@ const app = express()
 const port = 8080
 
 const rooms = {}
+const messages = {}
 
 // app.get('/', (req, res) => res.send('Hello World!!!!!'))
 
@@ -43,6 +44,7 @@ peers.on('connection', socket => {
   const room = socket.handshake.query.room
 
   rooms[room] = rooms[room] && rooms[room].set(socket.id, socket) || (new Map()).set(socket.id, socket)
+  messages[room] = messages[room] || []
 
   // connectedPeers.set(socket.id, socket)
 
@@ -50,6 +52,7 @@ peers.on('connection', socket => {
   socket.emit('connection-success', {
     success: socket.id,
     peerCount: rooms[room].size,
+    messages: messages[room],
   })
 
   // const broadcast = () => socket.broadcast.emit('joined-peers', {
@@ -82,11 +85,19 @@ peers.on('connection', socket => {
     }
   }
 
+  socket.on('new-message', (data) => {
+    console.log('new-message', JSON.parse(data.payload))
+
+    messages[room] = [...messages[room], JSON.parse(data.payload)]
+  })
+
   socket.on('disconnect', () => {
     console.log('disconnected')
     // connectedPeers.delete(socket.id)
     rooms[room].delete(socket.id)
+    messages[room] = rooms[room].size === 0 ? null : messages[room]
     disconnectedPeer(socket.id)
+    console.log(rooms[room].size, messages[room])
   })
 
   socket.on('onlinePeers', (data) => {
