@@ -3,24 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 
 var DragDrop = props => {
   const [bgColor, setBgColor] = useState('transparent')
-  // const ref = useRef()
 
-  // Monitor changes to position state and update DOM
-  // useEffect(() => {
-  //   if (ref.current) {
-  //     ref.current.style.transform = `translate(${position.x}px, ${position.y}px)`
-  //   }
-  // }, [position])
-
-  // Update the current position if mouse is down
-  // const onMouseMove = (event) => {
-  //   if (pressed) {
-  //     setPosition({
-  //       x: position.x + event.movementX,
-  //       y: position.y + event.movementY
-  //     })
-  //   }
-  // }
   const changeBgColor = (state) => {
     console.log(state)
     setBgColor(state && 'green' || 'transparent')

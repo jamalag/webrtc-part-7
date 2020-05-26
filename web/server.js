@@ -97,7 +97,6 @@ peers.on('connection', socket => {
     rooms[room].delete(socket.id)
     messages[room] = rooms[room].size === 0 ? null : messages[room]
     disconnectedPeer(socket.id)
-    console.log(rooms[room].size, messages[room])
   })
 
   socket.on('onlinePeers', (data) => {
