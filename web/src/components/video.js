@@ -6,6 +6,7 @@ class Video extends Component {
     this.state = {
       mic: true,
       camera: true,
+      videoVisible: true,
     }
   }
 
@@ -18,9 +19,30 @@ class Video extends Component {
   componentWillReceiveProps(nextProps) { 
     console.log(nextProps.videoStream)
 
+    // This is done only once
     if (nextProps.videoStream && nextProps.videoStream !== this.props.videoStream) {
       this.video.srcObject = nextProps.videoStream
     }
+
+    // We need to take care of react-native-webrtc library
+    // when audio/video is muted, it does not send blank frames
+    const videoTrack = nextProps.videoStream && nextProps.videoStream.getVideoTracks()
+    if (this.props.videoType === 'remoteVideo' && videoTrack && videoTrack.length) {
+      videoTrack[0].onmute = () => {
+        this.setStat({
+          videoVisible: false,
+        })
+        this.props.videoMuted(nextProps.videoStream)
+      }
+
+      videoTrack[0].onunmute = () => {
+        this.setState({
+          videoVisible: true,
+        })
+        this.props.videoMuted(nextProps.videoStream)
+      }
+    }
+
   }
 
   mutemic = (e) => {
@@ -55,7 +77,10 @@ class Video extends Component {
           id={this.props.id}
           muted={this.props.muted}
           autoPlay
-          style={{ ...this.props.videoStyles }}
+          style={{
+            visibility: this.state.videoVisible && 'visible' || 'hidden',
+            ...this.props.videoStyles
+          }}
           // ref={ this.props.videoRef }
           ref={ (ref) => {this.video = ref }}
         ></video>

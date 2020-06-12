@@ -44,7 +44,7 @@ class App extends Component {
     }
 
     // DONT FORGET TO CHANGE TO YOUR URL
-    this.serviceIP = 'https://a16161d1.ngrok.io/webrtcPeer'
+    this.serviceIP = 'https://7d2646ba4bf1.ngrok.io/webrtcPeer'
 
     // https://reactjs.org/docs/refs-and-the-dom.html
     // this.localVideoref = React.createRef()
@@ -255,6 +255,11 @@ class App extends Component {
 
     this.socket.on('peer-disconnected', data => {
       console.log('peer-disconnected', data)
+
+      this.state.peerConnections[data.socketID].close()
+
+      const rVideo = this.state.remoteStreams.filter(stream => stream.id === data.socketID)
+      rVideo && this.stopTracks(rVideo[0].stream)
 
       const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
 
@@ -477,17 +482,43 @@ class App extends Component {
     })
   }
 
+  stopTracks = (stream) => {
+    stream.getTracks().forEach(track => track.stop())
+  }
+
   render() {
 
-    if (this.state.disconnected) {
+    const { 
+      status,
+      messages,
+      disconnected,
+      localStream,
+      peerConnections,
+      remoteStreams,
+      selectedVideo,
+      sendChannels,
+    } = this.state
+
+    if (disconnected) {
+      // disconnect socket
       this.socket.close()
-      this.state.localStream.getTracks().forEach(track => track.stop())
+
+      //stop loca audio and video tracks
+      // localStream.getTracks().forEach(track => track.stop())
+      this.stopTracks(localStream)
+
+      // stop all remote audio and video tracks
+      remoteStreams.forEach(rVideo => this.stopTracks(rVideo.stream))
+
+      // stop/close all remote peerconnections
+      peerConnections && Object.values(peerConnections).forEach(pc => pc.close())
+
       return (<div>You have successfully Disconnected</div>)
     }
     
-    console.log(this.state.localStream)
+    console.log(localStream)
 
-    const statusText = <div style={{ color: 'yellow', padding: 5 }}>{this.state.status}</div>
+    const statusText = <div style={{ color: 'yellow', padding: 5 }}>{status}</div>
 
     return (
       <div>
@@ -515,11 +546,11 @@ class App extends Component {
           }}
           showMuteControls={true}
           // ref={this.localVideoref}
-          videoStream={this.state.localStream}
+          videoStream={localStream}
           autoPlay muted>
         </Video>
       </Draggable>
-      <Video
+      {/* <Video
         videoStyles={{
           zIndex: 1,
           position: 'fixed',
@@ -529,9 +560,9 @@ class App extends Component {
           backgroundColor: 'black'
         }}
         // ref={ this.remoteVideoref }
-        videoStream={this.state.selectedVideo && this.state.selectedVideo.stream}
+        videoStream={selectedVideo && selectedVideo.stream}
         autoPlay>
-      </Video>
+      </Video> */}
       <br />
       <div style={{
         zIndex: 3,
@@ -552,7 +583,7 @@ class App extends Component {
       <div>
         <Videos
           switchVideo={this.switchVideo}
-          remoteStreams={this.state.remoteStreams}
+          remoteStreams={remoteStreams}
         ></Videos>
       </div>
       <br />
@@ -561,12 +592,12 @@ class App extends Component {
             user={{
               uid: this.socket && this.socket.id || ''
           }}
-          messages={this.state.messages}
+          messages={messages}
           sendMessage={(message) => {
             this.setState(prevState => {
               return {messages: [...prevState.messages, message]}
             })
-            this.state.sendChannels.map(sendChannel => {
+            sendChannels.map(sendChannel => {
               sendChannel.readyState === 'open' && sendChannel.send(JSON.stringify(message))
             })
             this.sendToPeer('new-message', JSON.stringify(message), {local: this.socket.id})
