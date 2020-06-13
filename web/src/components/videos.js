@@ -15,21 +15,26 @@ class Videos extends Component {
 
   componentWillReceiveProps(nextProps) {
     if (this.props.remoteStreams !== nextProps.remoteStreams) {
-      
+
       const NoOfRemoteStreams = nextProps.remoteStreams.length
+
       let selectedVideo = {}
 
-      if (NoOfRemoteStreams === 1) {
-        selectedVideo = { selectedVideo: nextProps.remoteStreams[0]}
-      } else {
+      if (NoOfRemoteStreams === 1)
+        selectedVideo = { selectedVideo: nextProps.remoteStreams[0] }
+      else {
         selectedVideo = this.state.selectedVideo && nextProps.remoteStreams.filter(stream => stream.id === this.state.selectedVideo.id) || []
 
-        selectedVideo = selectedVideo.length ? {} : { selectedVideo: nextProps.remoteStreams[NoOfRemoteStreams - 1] }
+        selectedVideo = selectedVideo.length ? {} : { selectedVideo: nextProps.remoteStreams[NoOfRemoteStreams-1] }
       }
 
       let _rVideos = nextProps.remoteStreams.map((rVideo, index) => {
 
         const _videoTrack = rVideo.stream.getTracks().filter(track => track.kind === 'video')
+        // if (_videoTrack.length)
+        //   _videoTrack[0].onmute = () => {
+        //     alert('muted')
+        //   }
 
         let video = _videoTrack && (
           <Video
@@ -40,16 +45,14 @@ class Videos extends Component {
               backgroundColor: '#ffffff12',
               maxWidth: 120, maxHeight: 120,
               borderRadius: 5,
-              float: 'left', padding: '0 3px'
+              float: 'left', margin: '0 3px'
             }}
             videoStyles={{
-              // cursor: 'pointer',
               objectFit: 'cover',
               borderRadius: 5,
               width: 120, height: 120,
               maxWidth: 120, maxHeight: 120,
             }}
-            // autoplay
           />
         ) || <div></div>
 
@@ -57,9 +60,8 @@ class Videos extends Component {
           <div
             id={rVideo.name}
             onClick={() => this.switchVideo(rVideo)}
-            style={{
-              cursor: 'pointer',
-              display: 'inline-block'
+            style={{ 
+              cursor: 'pointer', display: 'inline-block'
             }}
             key={index}
           >
@@ -86,10 +88,10 @@ class Videos extends Component {
     }
   }
 
-  switchVideo = (rVideo) => {
-    const muteTrack = rVideo.stream.getVideoTracks()[0]
+  switchVideo = (_video) => {
+    const muteTrack = _video.stream.getVideoTracks()[0]
     this.setState({
-      selectedVideo: rVideo,
+      selectedVideo: _video,
       videoVisible: !muteTrack.muted
     })
   }
@@ -99,18 +101,16 @@ class Videos extends Component {
       <div>
         <Video
           videoType='previewVideo'
-          frameStyles={{
+          frameStyle={{
             zIndex: 1,
             position: 'fixed',
             bottom: 0,
-            minWidth: '100%',
-            minHeight: '100%',
+            minWidth: '100%', minHeight: '100%',
             backgroundColor: 'black'
           }}
           videoStyles={{
-            minWidth: '100%',
-            minHeight: '100%',
-            visibility: this.state.videoVisible && 'visible' || 'hidden'
+            minWidth: '100%', minHeight: '100%',
+            visibility: this.state.videoVisible && 'visible' || 'hidden',
           }}
           videoStream={this.state.selectedVideo && this.state.selectedVideo.stream}
         />

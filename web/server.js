@@ -24,6 +24,11 @@ app.get('/:room', (req, res, next) => {
   res.sendFile(__dirname + '/build/index.html')
 })
 
+app.post('/:room', (req, res, next) => {
+  console.log(req.body)
+  res.status(200).json({data: req.body})
+})
+
 const server = app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 
 io.listen(server)

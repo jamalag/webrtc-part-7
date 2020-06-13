@@ -50,7 +50,7 @@ class Video extends Component {
       streamURL
     } = this.props
 debugger
-    const _streamURL = streamURL //&& streamURL.toURL()
+    const _streamURL = streamURL && streamURL.toURL()
 
     return (
       <View>
