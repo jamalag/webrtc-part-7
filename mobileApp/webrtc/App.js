@@ -56,11 +56,6 @@ class App extends React.Component {
           {
             "url" : 'stun:stun.l.google.com:19302'
           },
-          {
-            "url": "turn:numb.viagenie.ca",
-            "username": "jamalag@hotmail.com",
-            "credential": "Y0utub3V1d30"
-          }
         ]
       },
 
@@ -81,7 +76,7 @@ class App extends React.Component {
     }
 
     // DONT FORGET TO CHANGE TO YOUR URL
-    this.serviceIP = 'https://7d2646ba4bf1.ngrok.io/webrtcPeer'
+    this.serviceIP = 'https://6531a7071618.ngrok.io/webrtcPeer'
 
     // this.sdp
     this.socket = null
