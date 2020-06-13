@@ -29,7 +29,7 @@ class Video extends Component {
 
   // componentDidMount() {
   //   if (this.props.videoStream) {
-  //     this.video.srcObject = this.props.videoStream
+  //     this.video.streamURL = this.props.videoStream
   //   }
   // }
 
@@ -37,7 +37,7 @@ class Video extends Component {
   //   console.log(nextProps.videoStream)
 
   //   if (nextProps.videoStream && nextProps.videoStream !== this.props.videoStream) {
-  //     this.video.srcObject = nextProps.videoStream
+  //     this.video.streamURL = nextProps.videoStream
   //   }
   // }
 
@@ -49,7 +49,7 @@ class Video extends Component {
       style,
       streamURL
     } = this.props
-debugger
+
     const _streamURL = streamURL && streamURL.toURL()
 
     return (

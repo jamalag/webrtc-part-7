@@ -42,8 +42,8 @@ class App extends React.Component {
     super(props)
 
     this.state = {
-      localStream: null,
-      remoteStream: null,
+      localStream: null,    // used to hold local stream object to avoid recreating the stream everytime a new offer comes
+      remoteStream: null,    // used to hold remote stream object that is displayed in the main screen
 
       remoteStreams: [],    // holds all Video Streams (all remote streams)
       peerConnections: {},  // holds all Peer Connections
@@ -54,7 +54,7 @@ class App extends React.Component {
       pc_config: {
         "iceServers": [
           {
-            urls : 'stun:stun.l.google.com:19302'
+            "url" : 'stun:stun.l.google.com:19302'
           },
           {
             "url": "turn:numb.viagenie.ca",
@@ -90,13 +90,14 @@ class App extends React.Component {
 
   getLocalStream = () => {
     const success = (stream) => {
+      console.log('localStream... ', stream.toURL())
       this.setState({
         localStream: stream
       })
+
       this.whoisOnline()
     }
 
-    // called when getUserMedia() fails - see below
     const failure = (e) => {
       console.log('getUserMedia Error: ', e)
     }
@@ -128,7 +129,7 @@ class App extends React.Component {
       mediaDevices.getUserMedia(constraints)
         .then(success)
         .catch(failure);
-    })
+    });
   }
 
   whoisOnline = () => {
@@ -171,96 +172,86 @@ class App extends React.Component {
         //     remoteStream: remoteStreams.length > 0 && remoteStreams[0].stream || null,
         //   })
         // }
-
       }
 
       pc.onaddstream = (e) => {
+        debugger
 
+        let _remoteStream = null
         let remoteStreams = this.state.remoteStreams
         let remoteVideo = {}
+
+        // if (e.stream.getTracks().length === 2) alert(e.stream.getTracks()[0].kind)
+
+        // let swappedStream = new MediaStream()
+        // console.log('0...', swappedStream)
+        // e.stream.getAudioTracks() && swappedStream.addTrack(e.stream.getAudioTracks()[0])
+        // console.log('1...', swappedStream)
+        // e.stream.getVideoTracks() && swappedStream.addTrack(e.stream.getVideoTracks()[0])
+        // console.log('2...', swappedStream)
+
+        // 1. check if stream already exists in remoteStreams
+        // const rVideos = this.state.remoteStreams.filter(stream => stream.id === socketID)
 
         remoteVideo = {
           id: socketID,
           name: socketID,
-          stream: e.stream
+          stream: e.stream,
         }
         remoteStreams = [...this.state.remoteStreams, remoteVideo]
 
+        // 2. if it does exist then add track
+        // if (rVideos.length) {
+        //   _remoteStream = rVideos[0].stream
+        //   _remoteStream.addTrack(e.track, _remoteStream)
+        //   remoteVideo = {
+        //     ...rVideos[0],
+        //     stream: _remoteStream,
+        //   }
+        //   remoteStreams = this.state.remoteStreams.map(_remoteVideo => {
+        //     return _remoteVideo.id === remoteVideo.id && remoteVideo || _remoteVideo
+        //   })
+        // } else {
+        //   // 3. if not, then create new stream and add track
+        //   _remoteStream = new MediaStream()
+        //   _remoteStream.addTrack(e.track, _remoteStream)
+
+        //   remoteVideo = {
+        //     id: socketID,
+        //     name: socketID,
+        //     stream: _remoteStream,
+        //   }
+        //   remoteStreams = [...this.state.remoteStreams, remoteVideo]
+        // }
+
+
+
+        // const remoteVideo = {
+        //   id: socketID,
+        //   name: socketID,
+        //   stream: e.streams[0]
+        // }
+
         this.setState(prevState => {
+
+          // If we already have a stream in display let it stay the same, otherwise use the latest stream
+          // const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.streams[0] }
           const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.stream }
 
+          // get currently selected video
           let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
-
+          // if the video is still in the list, then do nothing, otherwise set to new video stream
           selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
 
           return {
+            // selectedVideo: remoteVideo,
             ...selectedVideo,
+            // remoteStream: e.streams[0],
             ...remoteStream,
-            remoteStreams,
+            remoteStreams, //: [...prevState.remoteStreams, remoteVideo]
           }
         })
       }
-
-      // pc.ontrack = (e) => {
-
-      //   let _remoteStream = null
-      //   let remoteStreams = this.state.remoteStreams
-      //   let remoteVideo = {}
-
-
-      //   // 1. check if stream already exists in remoteStreams
-      //   const rVideos = this.state.remoteStreams.filter(stream => stream.id === socketID)
-
-      //   // 2. if it does exist then add track
-      //   if (rVideos.length) {
-      //     _remoteStream = rVideos[0].stream
-      //     _remoteStream.addTrack(e.track, _remoteStream)
-      //     remoteVideo = {
-      //       ...rVideos[0],
-      //       stream: _remoteStream,
-      //     }
-      //     remoteStreams = this.state.remoteStreams.map(_remoteVideo => {
-      //       return _remoteVideo.id === remoteVideo.id && remoteVideo || _remoteVideo
-      //     })
-      //   } else {
-      //     // 3. if not, then create new stream and add track
-      //     _remoteStream = new MediaStream()
-      //     _remoteStream.addTrack(e.track, _remoteStream)
-
-      //     remoteVideo = {
-      //       id: socketID,
-      //       name: socketID,
-      //       stream: _remoteStream,
-      //     }
-      //     remoteStreams = [...this.state.remoteStreams, remoteVideo]
-      //   }
-
-      //   // const remoteVideo = {
-      //   //   id: socketID,
-      //   //   name: socketID,
-      //   //   stream: e.streams[0]
-      //   // }
-
-      //   this.setState(prevState => {
-
-      //     // If we already have a stream in display let it stay the same, otherwise use the latest stream
-      //     // const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: e.streams[0] }
-      //     const remoteStream = prevState.remoteStreams.length > 0 ? {} : { remoteStream: _remoteStream }
-
-      //     // get currently selected video
-      //     let selectedVideo = prevState.remoteStreams.filter(stream => stream.id === prevState.selectedVideo.id)
-      //     // if the video is still in the list, then do nothing, otherwise set to new video stream
-      //     selectedVideo = selectedVideo.length ? {} : { selectedVideo: remoteVideo }
-
-      //     return {
-      //       // selectedVideo: remoteVideo,
-      //       ...selectedVideo,
-      //       // remoteStream: e.streams[0],
-      //       ...remoteStream,
-      //       remoteStreams, //: [...prevState.remoteStreams, remoteVideo]
-      //     }
-      //   })
-      // }
 
       pc.close = () => {
         // alert('GONE')
@@ -268,8 +259,11 @@ class App extends React.Component {
 
       if (this.state.localStream) {
         pc.addStream(this.state.localStream)
-      }
 
+      //   // this.state.localStream.getTracks().forEach(track => {
+      //   //   pc.addTrack(track, this.state.localStream)
+      //   // })
+      }
       // return pc
       callback(pc)
 
@@ -280,20 +274,22 @@ class App extends React.Component {
     }
   }
 
+  componentDidMount = () => { }
+
   joinRoom = () => {
+
     this.setState({
       connect: true,
     })
 
     const room = this.state.room || ''
-    alert(room)
 
     this.socket = io.connect(
       this.serviceIP,
       {
         path: '/io/webrtc',
         query: {
-          room: `/${room}`,
+          room: `/${room}`, //'/',
         }
       }
     )
@@ -303,10 +299,10 @@ class App extends React.Component {
       this.getLocalStream()
 
       console.log(data.success)
-      const status = data.peerCount > 1 ? `Total Connected Peers to room ${this.state.room}: ${data.peerCount}` : 'Waiting for other peers to connect'
+      const status = data.peerCount > 1 ? `Total Connected Peers to room ${this.state.room}: ${data.peerCount}` : this.state.status
 
       this.setState({
-        status: status,
+        status,
         messages: data.messages
       })
     })
@@ -324,6 +320,7 @@ class App extends React.Component {
       const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
 
       this.setState(prevState => {
+        // check if disconnected peer is the selected video and if there still connected peers, then select the first
         const selectedVideo = prevState.selectedVideo.id === data.socketID && remoteStreams.length ? { selectedVideo: remoteStreams[0] } : null
 
         return {
@@ -332,10 +329,12 @@ class App extends React.Component {
           ...selectedVideo,
           status: data.peerCount > 1 ? `Total Connected Peers to room ${this.state.room}: ${data.peerCount}` : 'Waiting for other peers to connect'
         }
-      })
+        }
+      )
     })
 
     this.socket.on('online-peer', socketID => {
+      debugger
       console.log('connected peers ...', socketID)
 
       // create and send offer to the peer (data.socketID)
@@ -346,7 +345,7 @@ class App extends React.Component {
       
           // Send Channel
           const handleSendChannelStatusChange = (event) => {
-            // console.log('send channel status: ' + this.state.sendChannels[0].readyState)
+            console.log('send channel status: ' + this.state.sendChannels[0].readyState)
           }
 
           const sendChannel = pc.createDataChannel('sendChannel')
@@ -358,7 +357,6 @@ class App extends React.Component {
               sendChannels: [...prevState.sendChannels, sendChannel]
             }
           })
-
 
           // Receive Channels
           const handleReceiveMessage = (event) => {
@@ -406,7 +404,7 @@ class App extends React.Component {
 
         // Send Channel
         const handleSendChannelStatusChange = (event) => {
-          // console.log('send channel status: ' + this.state.sendChannels[0].readyState)
+          console.log('send channel status: ' + this.state.sendChannels[0].readyState)
         }
 
         const sendChannel = pc.createDataChannel('sendChannel')
@@ -444,7 +442,7 @@ class App extends React.Component {
         }
 
         pc.ondatachannel = receiveChannelCallback
-
+debugger
         pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(() => {
           // 2. Create Answer
           pc.createAnswer(this.state.sdpConstraints)
@@ -463,7 +461,7 @@ class App extends React.Component {
     this.socket.on('answer', data => {
       // get remote's peerConnection
       const pc = this.state.peerConnections[data.socketID]
-      console.log(data.sdp)
+      // console.log(data.sdp)
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 
@@ -477,7 +475,8 @@ class App extends React.Component {
   }
 
   switchVideo = (_video) => {
-    console.log(_video)
+    debugger
+    // alert(_video)
     this.setState({
       selectedVideo: _video
     })
@@ -496,20 +495,19 @@ class App extends React.Component {
       connect,
     } = this.state
 
-    // list of remote videos
+    // debugger
     const remoteVideos = remoteStreams.map(rStream => {
       return (
         <TouchableOpacity onPress={() => this.switchVideo(rStream)}>
           <View
             style={{
-              flex: 1,
-              width: '100%',
-              backgroundColor: 'black',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: 2,
-            }}
-          >
+            flex: 1,
+            width: '100%',
+            backgroundColor: 'black',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 2,
+          }}>
             <Video
               key={2}
               mirror={true}
@@ -528,10 +526,7 @@ class App extends React.Component {
         <Video
           key={2}
           mirror={true}
-          style={{ 
-            width: dimensions.width,
-            height: dimensions.height / 2,
-           }}
+          style={{ width: dimensions.width, height: dimensions.height / 2, }}
           objectFit='cover'
           streamURL={this.state.selectedVideo && this.state.selectedVideo.stream}
           type='remote'
@@ -542,14 +537,15 @@ class App extends React.Component {
           <Text style={{ fontSize:22, textAlign: 'center', color: 'white' }}>Waiting for Peer connection ...</Text>
         </View>
       )
-    
-    if (!connect) {
+
+    if (!connect) 
       return (
         <SafeAreaView style={{ flex: 1, }}>
-          <StatusBar backgroundColor="blue" barStyle={'dark-content'} />
+          <StatusBar backgroundColor="blue" barStyle={'dark-content'}/>
           <View style={{
             ...styles.buttonsContainer,
-            paddingHorizontal: 15,
+            // backgroundColor: 'teal',
+            paddingHorizontal: 15
           }}>
             <TextInput
               // editable
@@ -577,109 +573,120 @@ class App extends React.Component {
           </View>
         </SafeAreaView>
       )
-    }
 
-    const videoActionButtons = (
-      <View style={{
-        ...styles.buttonsContainer,
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 15,
-      }}>
-        <Button
-          onPress={() => {
-            debugger
-            // mute video button
-            const videoTrack = localStream.getTracks().filter(track => track.kind === 'video')
-            videoTrack[0].enabled = !videoTrack[0].enabled
-            this.setState({
-              camera: videoTrack[0].enabled
-            })
-          }}
-          title={`camera ${ this.state.camera && '(on)' || '(off)'}`}
-          color={`${ this.state.camera && 'black' || 'red'}`}
-        />
-        <Button
-          onPress={() => {
-            // mute audio button
-            const audioTrack = localStream.getTracks().filter(track => track.kind === 'audio')
-            audioTrack[0].enabled = !audioTrack[0].enabled
-            this.setState({
-              mic: audioTrack[0].enabled
-            })
-          }}
-          title={`mic ${ this.state.mic && '(on)' || '(off)'}`}
-          color={`${ this.state.mic && 'black' || 'red'}`}
-        />
-        <Button
-          onPress={() => {
-            this.socket.close()
-            this.stopTracks(localStream)
-            remoteStreams.forEach(rVideo => this.stopTracks(rVideo.stream))
-            peerConnections && Object.values(peerConnections).forEach(pc => pc.close())
+      const videoActionButtons = (
+        <View style={{
+          ...styles.buttonsContainer,
+          justifyContent: 'center', alignItems: 'center',
+          paddingHorizontal: 15
+        }}>
+          <Button
+            onPress={() => {
+              debugger
+              const videoTrack = localStream.getTracks().filter(track => track.kind === 'video')
+              videoTrack[0].enabled = !videoTrack[0].enabled
+              this.setState({
+                camera: videoTrack[0].enabled
+              })
+            }}
+            title={`camera ${ this.state.camera && '(on)' || '(off)'}`}
+            color={`${ this.state.camera && 'black' || 'red'}`}
+          />
+          <Button
+            onPress={() => {
+              debugger
+              const audioTrack = localStream.getTracks().filter(track => track.kind === 'audio')
+              audioTrack[0].enabled = !audioTrack[0].enabled
+              this.setState({
+                mic: audioTrack[0].enabled
+              })
+            }}
+            title={`mic ${ this.state.mic && '(on)' || '(off)'}`}
+            color={`${ this.state.mic && 'black' || 'red'}`}
+          />
+          <Button
+            onPress={() => {
+              // disconnect socket
+              this.socket.close()
 
-            this.setState({
-              connect: false,
-              peerConnections: {},
-              remoteStreams: [],
-              localStream: null,
-              remoteStream: null,
-              selectedVideo: null,
-            })
-          }}
-          title='X DISCONNECT'
-          color='red'
-        />
-      </View>
-    )
+              // localStream.stop()
+              this.stopTracks(localStream)
+
+              // stop all remote audio & video tracks
+              remoteStreams.forEach(rVideo => this.stopTracks(rVideo.stream))
+
+              // stop all remote peerconnections
+              peerConnections && Object.values(peerConnections).forEach(pc => pc.close())
+
+              this.setState({
+                connect: false,
+                peerConnections: {},
+                remoteStreams: [],
+                localStream: null,
+                remoteStream: null,
+                selectedVideo: null,
+              })
+            }}
+            title='X DISCONNECT'
+            color='red'
+          />
+        </View>
+      )
 
     return (
-      
-      <SafeAreaView style={{ flex: 1, }}>
-        <StatusBar backgroundColor="blue" barStyle={'dark-content'} />
-        
-        {videoActionButtons}
-        
 
-        <View style={{ ...styles.videosContainer }}>
+      <SafeAreaView style={{ flex: 1, }}>
+        <StatusBar backgroundColor="blue" barStyle={'dark-content'}/>
+
+        { videoActionButtons }
+
+
+        <View style={{ ...styles.videosContainer, }}>
           <View style={{
             position: 'absolute',
             zIndex: 1,
             top: 10,
             right: 10,
             width: 100,
-            backgroundColor: 'black',
+            // height: 150,
+            backgroundColor: 'black', //width: '100%', height: '100%'
           }}>
-            <View style={{ flex: 1, }}>
-              <TouchableOpacity onPress={() => localStream._tracks[1]._switchCamera()}>
-                <View style={styles.button}>
-                  <Video
-                    key={1}
-                    zOrder={0}
-                    objectFit='cover'
-                    style={{ ...styles.rtcView }}
-                    streamURL={localStream}
-                    type='local'
-                  />
-                </View>
-              </TouchableOpacity>
-            </View>
-            </View>
-            <View style={{
-              flex: 1,
-              width: '100%',
-              backgroundColor: 'black',
-              justifyContent: 'center',
-              alignItems: 'center', 
-            }}>
+              <View style={{flex: 1 }}>
+                <TouchableOpacity onPress={() => localStream._tracks[1]._switchCamera()}>
+                  <View>
+                    <Video
+                      key={1}
+                      zOrder={0}
+                      objectFit='cover'
+                      style={{ ...styles.rtcView }}
+                      streamURL={localStream}
+                      type='local'
+                    />
+                  </View>
+                </TouchableOpacity>
+              </View>
+          </View>
+          {/* <ScrollView horizontal={true} style={{ 
+            flex: 1,
+            backgroundColor: 'black',
+            padding: 15,
+           }}> */}
+            <View
+              onPress={() => alert('hello')}
+              style={{
+                flex: 1,
+                width: '100%',
+                backgroundColor: 'black',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
               { remoteVideo }
             </View>
-            <ScrollView
-              horizontal={true}
-              style={{ ...styles.scrollView }}
-            >
-              {remoteVideos}
-            </ScrollView>
+          {/* </ScrollView> */}
+          <ScrollView horizontal={true} style={{ ...styles.scrollView }}>
+            { remoteVideos }
+          </ScrollView>
           </View>
         </SafeAreaView>
       );

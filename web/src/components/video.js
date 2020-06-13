@@ -6,6 +6,8 @@ class Video extends Component {
     this.state = {
       mic: true,
       camera: true,
+      // currentStream: new MediaStream(),
+      // videoTrack: false,
       videoVisible: true,
     }
   }
@@ -16,20 +18,25 @@ class Video extends Component {
     }
   }
 
-  componentWillReceiveProps(nextProps) { 
-    console.log(nextProps.videoStream)
+  componentWillReceiveProps(nextProps) {
+
+    // console.log('1. nextProps', this.props.showMuteControls, nextProps.videoStream && nextProps.videoStream.getTracks())
+    console.log('1', this.props.videoType, nextProps.videoStream)
 
     // This is done only once
     if (nextProps.videoStream && nextProps.videoStream !== this.props.videoStream) {
+    // if (!this.props.videoStream) {
+      console.log('2', this.props.videoType, nextProps.videoStream)
       this.video.srcObject = nextProps.videoStream
     }
 
-    // We need to take care of react-native-webrtc library
-    // when audio/video is muted, it does not send blank frames
+    // This is done only once when we receive a video track
     const videoTrack = nextProps.videoStream && nextProps.videoStream.getVideoTracks()
     if (this.props.videoType === 'remoteVideo' && videoTrack && videoTrack.length) {
+
       videoTrack[0].onmute = () => {
-        this.setStat({
+        // alert('muted')
+        this.setState({
           videoVisible: false,
         })
         this.props.videoMuted(nextProps.videoStream)
@@ -40,6 +47,18 @@ class Video extends Component {
           videoVisible: true,
         })
         this.props.videoMuted(nextProps.videoStream)
+      }
+    }
+
+
+    const audioTrack = nextProps.videoStream && nextProps.videoStream.getAudioTracks()
+    if (this.props.videoType === 'remoteVideo' && audioTrack && audioTrack.length) {
+      audioTrack[0].onmute = () => {
+        alert('muted')
+        // this.setState({
+        //   videoVisible: false,
+        // })
+        // this.props.videoMuted(nextProps.videoStream)
       }
     }
 
@@ -68,9 +87,10 @@ class Video extends Component {
         <i onClick={this.mutecamera} style={{ cursor: 'pointer', padding: 5, fontSize: 20, color: this.state.camera && 'white' || 'red' }} class='material-icons'>{this.state.camera && 'videocam' || 'videocam_off'}</i>
       </div>
     )
+
     return (
       <div
-        style={{ ...this.props.frameStyle }}
+        style={{ ...this.props.frameStyle,  }}
       >
         {/* <audio id={this.props.id} muted={this.props.muted} ref={ (ref) => {this.video = ref }}></audio> */}
         <video
@@ -79,7 +99,7 @@ class Video extends Component {
           autoPlay
           style={{
             visibility: this.state.videoVisible && 'visible' || 'hidden',
-            ...this.props.videoStyles
+            ...this.props.videoStyles,
           }}
           // ref={ this.props.videoRef }
           ref={ (ref) => {this.video = ref }}

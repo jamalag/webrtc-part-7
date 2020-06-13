@@ -153,6 +153,7 @@ class App extends Component {
         if (rVideos.length) {
           _remoteStream = rVideos[0].stream
           _remoteStream.addTrack(e.track, _remoteStream)
+
           remoteVideo = {
             ...rVideos[0],
             stream: _remoteStream,
@@ -202,6 +203,7 @@ class App extends Component {
 
       pc.close = () => {
         // alert('GONE')
+        console.log("pc closed");
       }
 
       if (this.state.localStream)
@@ -237,7 +239,7 @@ class App extends Component {
 
       this.getLocalStream()
 
-      console.log(data.success)
+      // console.log(data.success)
       const status = data.peerCount > 1 ? `Total Connected Peers to room ${window.location.pathname}: ${data.peerCount}` : 'Waiting for other peers to connect'
 
       this.setState({
@@ -253,14 +255,18 @@ class App extends Component {
       })
     })
 
+    // ************************************* //
+    // ************************************* //
     this.socket.on('peer-disconnected', data => {
-      console.log('peer-disconnected', data)
 
+      // close peer-connection with this peer
       this.state.peerConnections[data.socketID].close()
 
+      // get and stop remote audio and video tracks of the disconnected peer
       const rVideo = this.state.remoteStreams.filter(stream => stream.id === data.socketID)
       rVideo && this.stopTracks(rVideo[0].stream)
 
+      // filter out the disconnected peer stream
       const remoteStreams = this.state.remoteStreams.filter(stream => stream.id !== data.socketID)
 
       this.setState(prevState => {
@@ -286,7 +292,7 @@ class App extends Component {
     // })
 
     this.socket.on('online-peer', socketID => {
-      console.log('connected peers ...', socketID)
+      // console.log('connected peers ...', socketID)
 
       // create and send offer to the peer (data.socketID)
       // 1. Create new pc
@@ -313,7 +319,7 @@ class App extends Component {
           // Receive Channels
           const handleReceiveMessage = (event) => {
             const message = JSON.parse(event.data)
-            console.log(message)
+            // console.log(message)
             this.setState(prevState => {
               return {
                 messages: [...prevState.messages, message]
@@ -372,7 +378,7 @@ class App extends Component {
         // Receive Channels
         const handleReceiveMessage = (event) => {
           const message = JSON.parse(event.data)
-          console.log(message)
+          // console.log(message)
           this.setState(prevState => {
             return {
               messages: [...prevState.messages, message]
@@ -413,7 +419,7 @@ class App extends Component {
     this.socket.on('answer', data => {
       // get remote's peerConnection
       const pc = this.state.peerConnections[data.socketID]
-      console.log(data.sdp)
+      // console.log(data.sdp)
       pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(()=>{})
     })
 
@@ -475,48 +481,53 @@ class App extends Component {
 
   }
 
+  // ************************************* //
+  // NOT REQUIRED
+  // ************************************* //
+  disconnectSocket = (socketToDisconnect) => {
+    this.sendToPeer('socket-to-disconnect', null, {
+      local: this.socket.id,
+      remote: socketToDisconnect
+    })
+  }
+
   switchVideo = (_video) => {
-    console.log(_video)
+    // console.log(_video)
     this.setState({
       selectedVideo: _video
     })
   }
 
+  // ************************************* //
+  // ************************************* //
   stopTracks = (stream) => {
     stream.getTracks().forEach(track => track.stop())
   }
 
   render() {
-
-    const { 
+    const {
       status,
       messages,
       disconnected,
       localStream,
       peerConnections,
       remoteStreams,
-      selectedVideo,
-      sendChannels,
     } = this.state
 
     if (disconnected) {
       // disconnect socket
       this.socket.close()
-
-      //stop loca audio and video tracks
-      // localStream.getTracks().forEach(track => track.stop())
+      // stop local audio & video tracks
       this.stopTracks(localStream)
 
-      // stop all remote audio and video tracks
+      // stop all remote audio & video tracks
       remoteStreams.forEach(rVideo => this.stopTracks(rVideo.stream))
 
-      // stop/close all remote peerconnections
+      // stop all remote peerconnections
       peerConnections && Object.values(peerConnections).forEach(pc => pc.close())
 
       return (<div>You have successfully Disconnected</div>)
     }
-    
-    console.log(localStream)
 
     const statusText = <div style={{ color: 'yellow', padding: 5 }}>{status}</div>
 
@@ -529,6 +540,7 @@ class App extends Component {
         cursor: 'move'
       }}>
         <Video
+          videoType='localVideo'
           videoStyles={{
             // zIndex:2,
             // position: 'absolute',
@@ -551,42 +563,50 @@ class App extends Component {
         </Video>
       </Draggable>
       {/* <Video
+          frameStyle={{
+            zIndex: 1,
+            position: 'fixed',
+            bottom: 0,
+            minWidth: '100%', minHeight: '100%',
+            backgroundColor: 'black'
+          }}
         videoStyles={{
-          zIndex: 1,
-          position: 'fixed',
-          bottom: 0,
+          // zIndex: 1,
+          // position: 'fixed',
+          // bottom: 0,
           minWidth: '100%',
           minHeight: '100%',
-          backgroundColor: 'black'
+          // backgroundColor: 'black'
         }}
         // ref={ this.remoteVideoref }
-        videoStream={selectedVideo && selectedVideo.stream}
-        autoPlay>
-      </Video> */}
+        videoStream={this.state.selectedVideo && this.state.selectedVideo.stream}
+        // autoPlay
+      ></Video> */}
       <br />
-      <div style={{
-        zIndex: 3,
-        position: 'absolute',
-        // margin: 10,
-        // backgroundColor: '#cdc4ff4f',
-        // padding: 10,
-        // borderRadius: 5,
-      }}>
-        <i onClick={(e) => {this.setState({disconnected: true})}} style={{ cursor: 'pointer', paddingLeft: 15, color: 'red' }} class='material-icons'>highlight_off</i>
         <div style={{
-          margin: 10,
-          backgroundColor: '#cdc4ff4f',
-          padding: 10,
-          borderRadius: 5,
-        }}>{ statusText }</div>
-      </div>
-      <div>
-        <Videos
-          switchVideo={this.switchVideo}
-          remoteStreams={remoteStreams}
-        ></Videos>
-      </div>
-      <br />
+          zIndex: 3,
+          position: 'absolute',
+          // margin: 10,
+          // backgroundColor: '#cdc4ff4f',
+          // padding: 10,
+          // borderRadius: 5,
+        }}>
+          <i onClick={(e) => {this.setState({disconnected: true})}} style={{ cursor: 'pointer', paddingLeft: 15, color: 'red' }} class='material-icons'>highlight_off</i>
+          <div style={{
+            margin: 10,
+            backgroundColor: '#cdc4ff4f',
+            padding: 10,
+            borderRadius: 5,
+          }}>{ statusText }</div>
+        </div>
+        <div>
+          <Videos
+            switchVideo={this.switchVideo}
+            remoteStreams={remoteStreams}
+            // videoStream={this.state.selectedVideo && this.state.selectedVideo.stream}
+          ></Videos>
+        </div>
+        <br />
 
         <Chat
             user={{
@@ -597,7 +617,7 @@ class App extends Component {
             this.setState(prevState => {
               return {messages: [...prevState.messages, message]}
             })
-            sendChannels.map(sendChannel => {
+            this.state.sendChannels.map(sendChannel => {
               sendChannel.readyState === 'open' && sendChannel.send(JSON.stringify(message))
             })
             this.sendToPeer('new-message', JSON.stringify(message), {local: this.socket.id})
